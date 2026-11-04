@@ -18,11 +18,11 @@ Differentiable Boolean logic gates provide learnable synaptic operators, while s
 
 ## Methodology
 
-The MNIST method below follows the documented large identity-middle configuration. Blue shows spike flow, green logic synapses, and orange neuron dynamics and learning. The input is a genuine MNIST example; intermediate maps, membrane traces, and spikes are schematic.
+The MNIST method below follows the documented large identity-middle configuration. Blue shows forward flow, green logic synapses, and orange neuron dynamics and learning. The input is a genuine MNIST example; intermediate maps, membrane traces, and spikes are schematic.
 
-![MNIST Logic-SNN method: spatial logic-spike hierarchy, a shared seven-gate tree with the 16-operator bank, temporal membrane state, and soft training to hard inference.](docs/figures/mnist_architecture.svg)
+![MNIST Logic-SNN method: explicit layer-by-layer network with five LIF stages, a shared seven-gate tree with the 16-operator bank, temporal membrane state, and soft training to hard inference.](docs/figures/mnist_architecture.svg)
 
-*Figure 1. MNIST Logic-SNN (large, identity-middle; T = 4). (a) Two logic-tree/LIF/pooling blocks feed three dense logic-spike layers and a temporal/class-group mean readout. (b) Eight fixed local leaves form a spatially shared seven-gate tree; each gate mixes all 16 Boolean operators through their real-valued relaxations. (c) Gain-scaled logic-layer outputs drive LIF state carried across timesteps and reset between batches. (d) Soft training uses ATan surrogate gradients and backpropagation through time; argmax export retains wiring, current gain, LIF dynamics, and readout. α denotes the configured cross-entropy logit scale. Intermediate activity is illustrative.*
+*Figure 1. MNIST Logic-SNN (large, identity-middle; T = 4). (a) The layer-by-layer sequence separates two ConvLogicTree → gain/LIF → MaxPool stages, Flatten, three dense-logic → gain/LIF pairs, and temporal/class-group mean readout. Brackets show tensor shapes including batch size N. (b) Eight fixed local leaves form a spatially shared seven-gate tree; each gate mixes all 16 Boolean operators through their real-valued relaxations. (c) Gain-scaled logic-layer outputs drive LIF state carried across timesteps and reset between batches. (d) Soft training uses ATan surrogate gradients and backpropagation through time; argmax export retains wiring, current gain, LIF dynamics, and readout. α denotes the configured cross-entropy logit scale. Intermediate activity is illustrative.*
 
 [View the full-size editable SVG](docs/figures/mnist_architecture.svg)
 

@@ -18,11 +18,11 @@
 
 ## 方法概述
 
-下图以已记录的 MNIST large identity-middle 配置统一展示方法。蓝色表示脉冲流，绿色表示逻辑突触，橙色表示神经元动力学与学习。输入采用真实 MNIST 样本；中间特征图、膜电位曲线和脉冲均为机制示意。
+下图以已记录的 MNIST large identity-middle 配置统一展示方法。蓝色表示前向信息流，绿色表示逻辑突触，橙色表示神经元动力学与学习。输入采用真实 MNIST 样本；中间特征图、膜电位曲线和脉冲均为机制示意。
 
-![MNIST Logic-SNN 方法：逻辑与脉冲层级、含 16 种算子的七门共享逻辑树、时间膜电位状态，以及 soft 训练到 hard 推理。](docs/figures/mnist_architecture.svg)
+![MNIST Logic-SNN 方法：逐层展开的网络与五个 LIF 阶段、含 16 种算子的七门共享逻辑树、时间膜电位状态，以及 soft 训练到 hard 推理。](docs/figures/mnist_architecture.svg)
 
-*图 1：MNIST Logic-SNN（large、identity-middle，T = 4）。(a) 两个“逻辑树/LIF/池化”阶段连接三个稀疏逻辑脉冲层，并通过时间与类别分组均值读出。(b) 八个固定局部叶子组成空间共享的七门逻辑树；每个门通过实值松弛混合全部 16 种布尔算子。(c) 经电流增益缩放的逻辑层输出驱动 LIF，膜电位跨时间步保留，在独立批次间重置。(d) soft 训练使用 ATan 替代梯度与时间反向传播；argmax 导出保留连接、电流增益、LIF 动力学及读出。α 表示配置的交叉熵 logit 缩放系数。中间活动均为示意。*
+*图 1：MNIST Logic-SNN（large、identity-middle，T = 4）。(a) 逐层展开两个“卷积逻辑树 → 增益/LIF → MaxPool”阶段、Flatten、三组“稀疏逻辑层 → 增益/LIF”，以及时间与类别分组均值读出；括号标明包含批大小 N 的张量尺寸。(b) 八个固定局部叶子组成空间共享的七门逻辑树；每个门通过实值松弛混合全部 16 种布尔算子。(c) 经电流增益缩放的逻辑层输出驱动 LIF，膜电位跨时间步保留，在独立批次间重置。(d) soft 训练使用 ATan 替代梯度与时间反向传播；argmax 导出保留连接、电流增益、LIF 动力学及读出。α 表示配置的交叉熵 logit 缩放系数。中间活动均为示意。*
 
 [查看完整可编辑 SVG](docs/figures/mnist_architecture.svg)
 
