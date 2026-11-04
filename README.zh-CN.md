@@ -18,15 +18,13 @@
 
 ## 方法概述
 
-分别展示 MNIST 与 CIFAR-10 的代码对应网络结构。特征图、脉冲和逻辑算子分布均为机制示意。
+下图以已记录的 MNIST large identity-middle 配置统一展示方法。蓝色表示脉冲流，绿色表示逻辑突触，橙色表示神经元动力学与学习。输入采用真实 MNIST 样本；中间特征图、膜电位曲线和脉冲均为机制示意。
 
-![MNIST Logic-SNN 详细网络结构](docs/figures/mnist_architecture.svg)
+![MNIST Logic-SNN 方法：逻辑与脉冲层级、含 16 种算子的七门共享逻辑树、时间膜电位状态，以及 soft 训练到 hard 推理。](docs/figures/mnist_architecture.svg)
 
-*图 1a：MNIST identity-middle 配置，两个卷积逻辑树阶段、三个 Dense Logic 层，以及 T=4 的脉冲聚合。*
+*图 1：MNIST Logic-SNN（large、identity-middle，T = 4）。(a) 两个“逻辑树/LIF/池化”阶段连接三个稀疏逻辑脉冲层，并通过时间与类别分组均值读出。(b) 八个固定局部叶子组成空间共享的七门逻辑树；每个门通过实值松弛混合全部 16 种布尔算子。(c) 经电流增益缩放的逻辑层输出驱动 LIF，膜电位跨时间步保留，在独立批次间重置。(d) soft 训练使用 ATan 替代梯度与时间反向传播；argmax 导出保留连接、电流增益、LIF 动力学及读出。α 表示配置的交叉熵 logit 缩放系数。中间活动均为示意。*
 
-![CIFAR-10 Logic-SNN 详细网络结构](docs/figures/cifar10_architecture.svg)
-
-*图 1b：CIFAR-10 pyramid-m 配置，9 通道阈值输入、四个卷积逻辑树阶段与三个 Dense Logic 层。*
+[查看完整可编辑 SVG](docs/figures/mnist_architecture.svg)
 
 **突触计算。** 每个逻辑门学习 16 种双输入布尔运算的混合。局部深度为 3 的卷积逻辑树提取空间特征，后接全连接逻辑层。hard 模式在固定连接上选择 argmax 对应运算。[逻辑层实现](snn_minimal/models/logic_layers.py)提供两种表示。
 

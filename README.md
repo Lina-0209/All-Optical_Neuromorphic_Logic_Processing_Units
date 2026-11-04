@@ -18,15 +18,13 @@ Differentiable Boolean logic gates provide learnable synaptic operators, while s
 
 ## Methodology
 
-The two dataset-specific method figures below follow the implemented architectures and documented research configurations. Feature maps, spikes, and operator distributions are schematic.
+The MNIST method below follows the documented large identity-middle configuration. Blue shows spike flow, green logic synapses, and orange neuron dynamics and learning. The input is a genuine MNIST example; intermediate maps, membrane traces, and spikes are schematic.
 
-![MNIST method architecture](docs/figures/mnist_architecture.svg)
+![MNIST Logic-SNN method: spatial logic-spike hierarchy, a shared seven-gate tree with the 16-operator bank, temporal membrane state, and soft training to hard inference.](docs/figures/mnist_architecture.svg)
 
-*Figure 1a. MNIST Logic-SNN (identity-middle configuration): convolutional logic trees (1→96→192), three dense logic layers, and T=4 spike aggregation.*
+*Figure 1. MNIST Logic-SNN (large, identity-middle; T = 4). (a) Two logic-tree/LIF/pooling blocks feed three dense logic-spike layers and a temporal/class-group mean readout. (b) Eight fixed local leaves form a spatially shared seven-gate tree; each gate mixes all 16 Boolean operators through their real-valued relaxations. (c) Gain-scaled logic-layer outputs drive LIF state carried across timesteps and reset between batches. (d) Soft training uses ATan surrogate gradients and backpropagation through time; argmax export retains wiring, current gain, LIF dynamics, and readout. α denotes the configured cross-entropy logit scale. Intermediate activity is illustrative.*
 
-![CIFAR-10 method architecture](docs/figures/cifar10_architecture.svg)
-
-*Figure 1b. CIFAR-10 Logic-SNN (pyramid-m configuration): three-threshold RGB encoding, four convolutional logic-tree stages, and three dense logic layers.*
+[View the full-size editable SVG](docs/figures/mnist_architecture.svg)
 
 **Logic synapses.** Each binary gate learns a mixture over 16 Boolean operations. [Convolutional logic-tree layers](snn_minimal/models/logic_layers.py) combine eight fixed local leaves through seven gates. Dense logic layers use sparse fixed two-input connections. Hard export chooses the highest-logit operator per gate and retains all stored wiring.
 
