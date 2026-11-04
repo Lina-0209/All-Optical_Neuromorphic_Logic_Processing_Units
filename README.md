@@ -18,13 +18,16 @@ Differentiable Boolean logic gates provide learnable synaptic operators, while s
 
 ## Methodology
 
-The MNIST method below follows the documented large identity-middle configuration. Blue shows forward flow, green logic synapses, and orange neuron dynamics and learning. The input is a genuine MNIST example; intermediate maps, membrane traces, and spikes are schematic.
+The MNIST method follows the documented large identity-middle configuration. The input is a real MNIST example; feature patterns and neuron activity are schematic.
 
-![MNIST Logic-SNN method: explicit layer-by-layer network with five LIF stages, a shared seven-gate tree with the 16-operator bank, temporal membrane state, and soft training to hard inference.](docs/figures/mnist_architecture.svg)
+![MNIST Logic-SNN: two-row network with two spatial logic/LIF/pooling stages, three dense logic/LIF pairs, mean-rate classification, and compact logic-synapse and LIF mechanisms.](docs/figures/mnist_architecture.svg)
 
-*Figure 1. MNIST Logic-SNN (large, identity-middle; T = 4). (a) The layer-by-layer sequence separates two ConvLogicTree → gain/LIF → MaxPool stages, Flatten, three dense-logic → gain/LIF pairs, and temporal/class-group mean readout. Brackets show tensor shapes including batch size N. (b) Eight fixed local leaves form a spatially shared seven-gate tree; each gate mixes all 16 Boolean operators through their real-valued relaxations. (c) Gain-scaled logic-layer outputs drive LIF state carried across timesteps and reset between batches. (d) Soft training uses ATan surrogate gradients and backpropagation through time; argmax export retains wiring, current gain, LIF dynamics, and readout. α denotes the configured cross-entropy logit scale. Intermediate activity is illustrative.*
+*Figure 1. MNIST Logic-SNN (large, identity-middle; T = 4). (a) Spatial feature extraction continues on the second row through three dense logic/LIF pairs and mean-rate readout. (b) A shared seven-gate tree and soft-to-hard operator selection. (c) LIF integrates currents, fires at threshold, and resets. Intermediate patterns and traces are illustrative.*
 
 [View the full-size editable SVG](docs/figures/mnist_architecture.svg)
+
+<details>
+<summary>Layer dimensions, training/export, and all 16 Boolean operators</summary>
 
 **Logic synapses.** Each binary gate learns a mixture over 16 Boolean operations. [Convolutional logic-tree layers](snn_minimal/models/logic_layers.py) combine eight fixed local leaves through seven gates. Dense logic layers use sparse fixed two-input connections. Hard export chooses the highest-logit operator per gate and retains all stored wiring.
 
@@ -35,6 +38,47 @@ The MNIST method below follows the documented large identity-middle configuratio
 $$r_c=\frac{1}{TM}\sum_{t=1}^T\sum_{j=1}^M s_{t,c,j}.$$
 
 The argmax class score yields the prediction. Gate export changes the synaptic operator representation while preserving this temporal readout.
+
+**Exact MNIST layer dimensions.** N is batch size. Every logic layer is followed by current gain and its own stateful LIF neuron.
+
+| Stage | Output shape |
+|:---|:---|
+| Binary input | N × 1 × 28 × 28 |
+| Logic tree 1 → LIF | N × 96 × 28 × 28 |
+| MaxPool 1 | N × 96 × 14 × 14 |
+| Logic tree 2 → LIF | N × 192 × 14 × 14 |
+| MaxPool 2 | N × 192 × 7 × 7 |
+| Flatten | N × 9408 |
+| Dense logic 1 → LIF | N × 8192 |
+| Dense logic 2 → LIF (identity-A init) | N × 8192 |
+| Dense logic 3 → LIF | N × 20480 |
+| Class grouping | N × 10 × 2048 |
+| Mean over T = 4 and M = 2048 | N × 10 |
+
+**Soft training → export → hard inference.** Soft gates use $p=\operatorname{softmax}(\theta/\tau_g)$ and $g(a,b)=\sum_{k=0}^{15}p_k f_k(a,b)$. The documented configuration trains gate logits with ATan surrogate gradients, backpropagation through time, and scaled cross-entropy $CE(\alpha r,y)$, where $\alpha$ is the configured positive logit scale. Export selects $k^*=\arg\max_k\theta_k$ per gate. Hard inference retains the fixed wiring, current gain, LIF dynamics, four image presentations, and temporal readout.
+
+**Complete operator library.** IDs follow [the implementation](snn_minimal/models/logic_ops.py); columns give outputs for input pairs (A,B) = 00, 01, 10, 11. Soft training uses the operators' real-valued relaxations; the table shows their Boolean values.
+
+| ID | Operator | 00 | 01 | 10 | 11 |
+|---:|:---|:---:|:---:|:---:|:---:|
+| 0 | FALSE | 0 | 0 | 0 | 0 |
+| 1 | A ∧ B | 0 | 0 | 0 | 1 |
+| 2 | A ∧ ¬B | 0 | 0 | 1 | 0 |
+| 3 | A | 0 | 0 | 1 | 1 |
+| 4 | ¬A ∧ B | 0 | 1 | 0 | 0 |
+| 5 | B | 0 | 1 | 0 | 1 |
+| 6 | XOR | 0 | 1 | 1 | 0 |
+| 7 | OR | 0 | 1 | 1 | 1 |
+| 8 | NOR | 1 | 0 | 0 | 0 |
+| 9 | XNOR | 1 | 0 | 0 | 1 |
+| 10 | ¬B | 1 | 0 | 1 | 0 |
+| 11 | B ⇒ A | 1 | 0 | 1 | 1 |
+| 12 | ¬A | 1 | 1 | 0 | 0 |
+| 13 | A ⇒ B | 1 | 1 | 0 | 1 |
+| 14 | NAND | 1 | 1 | 1 | 0 |
+| 15 | TRUE | 1 | 1 | 1 | 1 |
+
+</details>
 
 ## Experiments
 

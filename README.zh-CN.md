@@ -18,13 +18,16 @@
 
 ## 方法概述
 
-下图以已记录的 MNIST large identity-middle 配置统一展示方法。蓝色表示前向信息流，绿色表示逻辑突触，橙色表示神经元动力学与学习。输入采用真实 MNIST 样本；中间特征图、膜电位曲线和脉冲均为机制示意。
+下图采用已记录的 MNIST large identity-middle 配置。输入是真实 MNIST 样本；中间特征图和神经元活动均为机制示意。
 
-![MNIST Logic-SNN 方法：逐层展开的网络与五个 LIF 阶段、含 16 种算子的七门共享逻辑树、时间膜电位状态，以及 soft 训练到 hard 推理。](docs/figures/mnist_architecture.svg)
+![MNIST Logic-SNN：上下两行展示两个空间逻辑/LIF/池化阶段、三组稀疏逻辑层/LIF 和均值读出，下方为简要的逻辑突触与 LIF 机制。](docs/figures/mnist_architecture.svg)
 
-*图 1：MNIST Logic-SNN（large、identity-middle，T = 4）。(a) 逐层展开两个“卷积逻辑树 → 增益/LIF → MaxPool”阶段、Flatten、三组“稀疏逻辑层 → 增益/LIF”，以及时间与类别分组均值读出；括号标明包含批大小 N 的张量尺寸。(b) 八个固定局部叶子组成空间共享的七门逻辑树；每个门通过实值松弛混合全部 16 种布尔算子。(c) 经电流增益缩放的逻辑层输出驱动 LIF，膜电位跨时间步保留，在独立批次间重置。(d) soft 训练使用 ATan 替代梯度与时间反向传播；argmax 导出保留连接、电流增益、LIF 动力学及读出。α 表示配置的交叉熵 logit 缩放系数。中间活动均为示意。*
+*图 1：MNIST Logic-SNN（large、identity-middle，T = 4）。(a) 空间特征提取后，沿连线进入第二行的三组稀疏逻辑层/LIF 和均值读出。(b) 空间共享的七门逻辑树及 soft→hard 算子选择。(c) LIF 累积电流，在达到阈值时发放脉冲并复位。中间图案和曲线均为示意。*
 
 [查看完整可编辑 SVG](docs/figures/mnist_architecture.svg)
+
+<details>
+<summary>展开：层宽、训练/导出流程与完整 16 算子表</summary>
 
 **突触计算。** 每个逻辑门学习 16 种双输入布尔运算的混合。局部深度为 3 的卷积逻辑树提取空间特征，后接全连接逻辑层。hard 模式在固定连接上选择 argmax 对应运算。[逻辑层实现](snn_minimal/models/logic_layers.py)提供两种表示。
 
@@ -33,6 +36,47 @@
 $$r_c=\frac{1}{T M}\sum_{t=1}^{T}\sum_{j=1}^{M}s_{t,c,j}.$$
 
 $M$ 为每个类别对应的输出数。该模型将可离散突触与膜电位动力学、时间聚合相结合。实现见[共享前向路径与导出](snn_minimal/models/logic_snn.py)。
+
+**MNIST 精确层宽。** N 为批大小。每个逻辑层后都有电流增益与独立保留状态的 LIF 神经元。
+
+| 阶段 | 输出形状 |
+|:---|:---|
+| 二值输入 | N × 1 × 28 × 28 |
+| 逻辑树 1 → LIF | N × 96 × 28 × 28 |
+| MaxPool 1 | N × 96 × 14 × 14 |
+| 逻辑树 2 → LIF | N × 192 × 14 × 14 |
+| MaxPool 2 | N × 192 × 7 × 7 |
+| Flatten | N × 9408 |
+| 稀疏逻辑层 1 → LIF | N × 8192 |
+| 稀疏逻辑层 2 → LIF（identity-A 初始化） | N × 8192 |
+| 稀疏逻辑层 3 → LIF | N × 20480 |
+| 类别分组 | N × 10 × 2048 |
+| 对 T = 4 与 M = 2048 求均值 | N × 10 |
+
+**Soft 训练 → 导出 → Hard 推理。** Soft 门使用 $p=\operatorname{softmax}(\theta/\tau_g)$ 和 $g(a,b)=\sum_{k=0}^{15}p_k f_k(a,b)$。已记录配置通过 ATan 替代梯度、时间反向传播和缩放交叉熵 $CE(\alpha r,y)$ 学习门 logits；$\alpha$ 为配置的正 logit 缩放系数。导出时，每个门选择 $k^*=\arg\max_k\theta_k$。Hard 推理保留固定连接、电流增益、LIF 动力学、四次重复图像输入及时间读出。
+
+**完整算子库。** 编号与[代码实现](snn_minimal/models/logic_ops.py)一致；列对应输入对 (A,B) = 00、01、10、11。Soft 训练使用算子的实值松弛，下表展示布尔取值。
+
+| 编号 | 算子 | 00 | 01 | 10 | 11 |
+|---:|:---|:---:|:---:|:---:|:---:|
+| 0 | FALSE | 0 | 0 | 0 | 0 |
+| 1 | A ∧ B | 0 | 0 | 0 | 1 |
+| 2 | A ∧ ¬B | 0 | 0 | 1 | 0 |
+| 3 | A | 0 | 0 | 1 | 1 |
+| 4 | ¬A ∧ B | 0 | 1 | 0 | 0 |
+| 5 | B | 0 | 1 | 0 | 1 |
+| 6 | XOR | 0 | 1 | 1 | 0 |
+| 7 | OR | 0 | 1 | 1 | 1 |
+| 8 | NOR | 1 | 0 | 0 | 0 |
+| 9 | XNOR | 1 | 0 | 0 | 1 |
+| 10 | ¬B | 1 | 0 | 1 | 0 |
+| 11 | B ⇒ A | 1 | 0 | 1 | 1 |
+| 12 | ¬A | 1 | 1 | 0 | 0 |
+| 13 | A ⇒ B | 1 | 1 | 0 | 1 |
+| 14 | NAND | 1 | 1 | 1 | 0 |
+| 15 | TRUE | 1 | 1 | 1 | 1 |
+
+</details>
 
 ## 实验
 
