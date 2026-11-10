@@ -36,25 +36,6 @@ $$r_c=\frac{1}{TM}\sum_{t=1}^T\sum_{j=1}^M s_{t,c,j}.$$
 
 The argmax class score yields the prediction. Gate export changes the synaptic operator representation while preserving this temporal readout.
 
-## Experiments
-
-**Primary finding — the exported hybrid retains high MNIST accuracy at four timesteps.**
-
-![Logic-SNN evaluation highlights](docs/figures/key_results.svg)
-
-*Figure 2. MNIST hard-mode performance and soft-to-hard gap at T = 4. CIFAR-10's separate soft-mode operating point appears in Table 1.*
-
-| Dataset / architecture | Timesteps | Soft test accuracy ↑ | Hard test accuracy ↑ | Test samples |
-|:--|--:|--:|--:|--:|
-| **MNIST / large, identity-middle** | 4 | **98.05%** | **97.54%** | 10,000 |
-| CIFAR-10 / pyramid-m, 9-channel input | 4 | **67.49%** | 28.76% | 10,000 |
-
-*Table 1. Reported single configurations with their corresponding soft and hard measurements. The two dataset rows use distinct network and input settings.*
-
-**Evidence interpretation.** The MNIST result directly supports the discrete-synapse claim: at T = 4, hard inference reaches **97.54%**, within **0.51 pp** of its soft counterpart. CIFAR-10 establishes a **67.49% soft-mode** natural-image operating point; its separately measured hard accuracy is reported explicitly for a faithful execution-mode distinction.
-
-**Protocol.** Both rows use LIF neurons and validation-selected soft checkpoints. Results are individual configurations, not multi-seed estimates. The hard mode retains membrane dynamics and firing-rate aggregation. The repository's tracked [experiment summary](results/experiment_summary.json) pertains to conventional ConvSNN runs; Table 1 reflects the Logic-SNN configurations documented in this project's research README and supporting materials.
-
 ## Task coverage
 
 | Model family | MNIST | CIFAR-10 | CIFAR10-DVS |
